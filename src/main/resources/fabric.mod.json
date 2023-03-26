@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "way2wayfabric",
+  "version": "${version}",
+  "name": "Way2Way",
+  "description": "Yet another mod to sync discovered waystones to Xaero's Minimap waypoints",
+  "authors": [
+    "Jim Ramsay <i.am@jimramsay.com>"
+  ],
+  "contact": {
+    "homepage": "https://github.com/lack/way2wayfabric",
+    "issues": "https://github.com/lack/way2wayfabric/issues",
+    "sources": "https://github.com/lack/way2wayfabric"
+  },
+  "license": "MIT",
+  "icon": "assets/way2wayfabric/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "com.jimramsay.way2wayfabric.Way2WayFabric"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${fabricloader}",
+    "fabric-api": ">=${fabric_api}",
+    "fabric-language-kotlin": ">=${fabric_language_kotlin}",
+    "minecraft": ">=${minecraft}",
+    "java": ">=${java}"
+  }
+}
