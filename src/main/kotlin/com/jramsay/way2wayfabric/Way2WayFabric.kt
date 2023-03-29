@@ -37,7 +37,8 @@ fun WaypointsManager.sameDimensionAs(waystone: IWaystone): Boolean {
 fun Waypoint(waystone: IWaystone): Waypoint {
     val pos = waystone.pos.up(2)
     val color = (Math.random() * ModSettings.ENCHANT_COLORS.size).toInt()
-    return Waypoint(pos.x, pos.y, pos.z, waystone.name, waystone.name.substring(0, 1), color, 0, false)
+    val symbol = "〨"
+    return Waypoint(pos.x, pos.y, pos.z, waystone.name, symbol, color, 0, false)
 }
 
 fun Waypoint.matches(that: Waypoint): Boolean {
@@ -48,12 +49,12 @@ fun WaypointSet.updateWaypoint(new: Waypoint): Boolean {
     logger.debug("Updating waypoint ${new.name}")
     val existing = this.list.find{it.matches(new)}
     if (existing == null) {
-        logger.info("Adding new waypoint for ${new.name}")
+        logger.info("Adding new waypoint: ${new.symbol}:${new.name}")
         this.list.add(new)
         return true
     }
-    if (existing.name != new.name) {
-        logger.info("Found existing waypoint -> Updating name from ${existing.name} to ${new.name}")
+    if (existing.name != new.name || existing.symbol != new.symbol) {
+        logger.info("Found existing waypoint: ${existing.symbol}:${existing.name} -> ${new.symbol}${new.name}")
         existing.name = new.name
         existing.symbol = new.symbol
         return true
@@ -88,7 +89,7 @@ object Way2WayFabric: ModInitializer {
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
-            logger.debug("Could not find a world to put waypoints in")
+            logger.warn("Could not find a world to put waypoints in")
             return
         }
 
@@ -116,7 +117,7 @@ object Way2WayFabric: ModInitializer {
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
-            logger.debug("Could not find a world to put waypoints in")
+            logger.warn("Could not find a world to put waypoints in")
             return
         }
 
