@@ -66,6 +66,7 @@ fun WaypointSet.updateWaypoint(new: Waypoint): Boolean {
 @Suppress("UNUSED")
 object Way2WayFabric: ModInitializer {
     private const val MOD_ID = "way2way_fabric"
+    private val warned = HashSet<String>()
 
     override fun onInitialize() {
         Balm.getEvents().onEvent(KnownWaystonesEvent::class.java, this::onKnownWaystones)
@@ -77,18 +78,25 @@ object Way2WayFabric: ModInitializer {
         return XaeroMinimapSession.getCurrentSession()?.waypointsManager
     }
 
+    fun warnOnce(message: String) {
+        if (!this.warned.contains(message)) {
+            logger.warn(message)
+            this.warned.add(message)
+        }
+    }
+
     fun onKnownWaystones(ev: KnownWaystonesEvent) {
         logger.debug("Known: ${ev.waystones.size} waystones")
 
         val waypointMgr = this.waypointManager()
         if (waypointMgr == null) {
-            logger.debug("Could not get a waypoint manager")
+            warnOnce("Could not get a waypoint manager")
             return
         }
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
-            logger.warn("Could not find a world to put waypoints in")
+            warnOnce("Could not find a world to put waypoints in")
             return
         }
 
@@ -110,13 +118,13 @@ object Way2WayFabric: ModInitializer {
         logger.debug("Update: ${ev.waystone}")
         val waypointMgr = this.waypointManager()
         if (waypointMgr == null) {
-            logger.debug("Could not get a waypoint manager")
+            warnOnce("Could not get a waypoint manager")
             return
         }
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
-            logger.warn("Could not find a world to put waypoints in")
+            warnOnce("Could not find a world to put waypoints in")
             return
         }
 
