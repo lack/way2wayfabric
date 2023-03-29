@@ -14,6 +14,8 @@ import xaero.common.XaeroMinimapSession
 import xaero.minimap.XaeroMinimap
 import net.minecraft.client.MinecraftClient
 import org.slf4j.LoggerFactory
+import java.util.Timer
+import kotlin.concurrent.schedule
 
 val logger = LoggerFactory.getLogger("Way2WayFabric")
 
@@ -85,9 +87,7 @@ object Way2WayFabric: ModInitializer {
         }
     }
 
-    fun onKnownWaystones(ev: KnownWaystonesEvent) {
-        logger.debug("Known: ${ev.waystones.size} waystones")
-
+    fun updateAllWaypoints(ev: KnownWaystonesEvent, repeats: Int) {
         val waypointMgr = this.waypointManager()
         if (waypointMgr == null) {
             warnOnce("Could not get a waypoint manager")
@@ -96,7 +96,17 @@ object Way2WayFabric: ModInitializer {
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
-            warnOnce("Could not find a world to put waypoints in")
+            if (repeats < 20) {
+                // TODO: If there was an event from Xaero's Minimap we could
+                // wait for that would signal the wayponts are ready that would
+                // be better, but I haven't found one yet...
+                Timer("Deferred Event", false).schedule(500) {
+                    logger.debug("Running deferred event handler...")
+                    updateAllWaypoints(ev, repeats + 1)
+                }
+            } else {
+                warnOnce("Could not find a world to put waypoints in")
+            }
             return
         }
 
@@ -112,6 +122,11 @@ object Way2WayFabric: ModInitializer {
             logger.info("Synchronized $changed waystone waypoints")
             XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
         }
+    }
+
+    fun onKnownWaystones(ev: KnownWaystonesEvent) {
+        logger.debug("Known: ${ev.waystones.size} waystones")
+        updateAllWaypoints(ev, 0)
     }
 
     fun onWaystoneUpdate(ev: WaystoneUpdateReceivedEvent) {
