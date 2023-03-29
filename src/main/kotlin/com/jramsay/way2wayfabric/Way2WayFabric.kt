@@ -10,6 +10,7 @@ import xaero.common.minimap.waypoints.WaypointSet
 import xaero.common.minimap.waypoints.Waypoint
 import xaero.common.minimap.waypoints.WaypointsManager
 import xaero.common.settings.ModSettings
+import xaero.common.XaeroMinimapSession
 import xaero.minimap.XaeroMinimap
 import net.minecraft.client.MinecraftClient
 import org.slf4j.LoggerFactory
@@ -73,9 +74,7 @@ object Way2WayFabric: ModInitializer {
     }
 
     fun waypointManager() : WaypointsManager? {
-        val connection = MinecraftClient.getInstance().networkHandler
-        val handler = connection as? IXaeroMinimapClientPlayNetHandler
-        return handler?.xaero_minimapSession?.waypointsManager
+        return XaeroMinimapSession.getCurrentSession()?.waypointsManager
     }
 
     fun onKnownWaystones(ev: KnownWaystonesEvent) {
