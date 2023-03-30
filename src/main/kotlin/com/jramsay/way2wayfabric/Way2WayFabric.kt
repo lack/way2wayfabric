@@ -16,6 +16,7 @@ import net.minecraft.client.MinecraftClient
 import org.slf4j.LoggerFactory
 import java.util.Timer
 import kotlin.concurrent.schedule
+import kotlin.random.Random
 
 val logger = LoggerFactory.getLogger("Way2WayFabric")
 
@@ -39,7 +40,7 @@ fun WaypointsManager.sameDimensionAs(waystone: IWaystone): Boolean {
 
 fun Waypoint(waystone: IWaystone): Waypoint {
     val pos = waystone.pos.up(2)
-    val color = (Math.random() * ModSettings.ENCHANT_COLORS.size).toInt()
+    val color = Random.nextInt(ModSettings.ENCHANT_COLORS.size)
     val symbol = "〨"
     return Waypoint(pos.x, pos.y, pos.z, waystone.name, symbol, color, 0, false)
 }
