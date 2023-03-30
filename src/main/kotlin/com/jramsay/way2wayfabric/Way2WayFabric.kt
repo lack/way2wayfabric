@@ -68,7 +68,7 @@ fun WaypointSet.updateWaypoint(new: Waypoint): Boolean {
 
 @Suppress("UNUSED")
 object Way2WayFabric: ModInitializer {
-    private const val MOD_ID = "way2way_fabric"
+    const val MOD_ID = "way2wayfabric"
     private val warned = HashSet<String>()
 
     override fun onInitialize() {
