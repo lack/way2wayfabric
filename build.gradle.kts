@@ -17,8 +17,11 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api", "fabric-api", project.extra["fabric_version"] as String)
     modImplementation("net.fabricmc", "fabric-language-kotlin", project.extra["fabric_language_kotlin_version"] as String)
     modImplementation("curse.maven", "xaers-minimap-263420", project.extra["xaero_minimap_id"] as String)
-    modImplementation("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
-    modImplementation("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
+
+    modApi("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
+    modRuntimeOnly("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
+    modApi("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
+    modRuntimeOnly("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
 }
 tasks {
     val javaVersion = JavaVersion.toVersion((project.extra["java_version"] as String).toInt())
