@@ -3,9 +3,18 @@
   "id": "way2wayfabric",
   "version": "${version}",
   "name": "Way2Way",
-  "description": "Yet another mod to sync discovered waystones to Xaero's Minimap waypoints",
+  "description": "Waystone -> Xaero's Minimap Waypoint sync for fabric",
   "authors": [
-    "Jim Ramsay <i.am@jimramsay.com>"
+    {
+      "name": "lack",
+      "contact": {
+        "email": "i.am@jimramsay.com",
+        "homepage": "https://modrinth.com/user/lack"
+      }
+    }
+  ],
+  "contributors": [
+    "ja2ui0"
   ],
   "contact": {
     "homepage": "https://github.com/lack/way2wayfabric",
@@ -14,7 +23,7 @@
   },
   "license": "MIT",
   "icon": "assets/way2wayfabric/icon.png",
-  "environment": "*",
+  "environment": "client",
   "entrypoints": {
     "main": [
       {
