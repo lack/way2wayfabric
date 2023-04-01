@@ -20,6 +20,8 @@ val logger = LoggerFactory.getLogger("Way2WayFabric")
 interface IWay2WayHandler {
     fun syncWaystone(waystone: GenericWaystone)
     fun syncAllWaystones(waystones: List<GenericWaystone>)
+    fun removeWaystone(waystone: GenericWaystone)
+    fun removeAllWaystones()
 }
 
 interface IWaystoneProvider {
@@ -180,6 +182,51 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
                 logger.info("Updated waystone \"${waystone.name}\" waypoint")
                 XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
             }
+        }
+    }
+
+    override fun removeWaystone(waystone: GenericWaystone) {
+        logger.debug("Removing waypoint for $waystone")
+
+        val waypointMgr = waypointManager()
+        if (waypointMgr == null) {
+            warnOnce("Could not get a waypoint manager")
+            return
+        }
+
+        val waypointSet = waypointMgr.currentWorld?.currentSet
+        if (waypointSet == null) {
+            warnOnce("Could not find a world to put waypoints in")
+            return
+        }
+        val changed = waypointSet.list.removeIf {
+            it.matches(waystone)
+        }
+        if (changed) {
+            logger.info("Removed waypoint for $waystone")
+            XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
+        }
+    }
+
+    override fun removeAllWaystones() {
+        logger.debug("Removing all waystone waypoints")
+        val waypointMgr = waypointManager()
+        if (waypointMgr == null) {
+            warnOnce("Could not get a waypoint manager")
+            return
+        }
+
+        val waypointSet = waypointMgr.currentWorld?.currentSet
+        if (waypointSet == null) {
+            warnOnce("Could not find a world to put waypoints in")
+            return
+        }
+        val changed = waypointSet.list.removeIf {
+            it.symbol == GenericWaystone.SYMBOL
+        }
+        if (changed) {
+            logger.info("Removed all waystone waypoints")
+            XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
         }
     }
 }
