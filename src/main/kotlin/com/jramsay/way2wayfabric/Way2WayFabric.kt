@@ -131,16 +131,27 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
             return
         }
 
+        var stale = waypointSet.list.filter {
+            it.symbol == GenericWaystone.SYMBOL
+        }
+
         var changed = 0
         waystones.filter {
             waypointMgr.sameDimensionAs(it)
         }.forEach {
             if (waypointSet.updateWaypointFor(it))
                 changed += 1
+            stale = stale.filterNot {
+                wp -> wp.matches(it)
+            }
+        }
+
+        if (stale.size > 0) {
+            waypointSet.list.removeAll(stale)
         }
         
-        if (changed > 0) {
-            logger.info("Synchronized $changed waystone waypoints")
+        if (changed > 0 || stale.size > 0) {
+            logger.info("Synchronized $changed waystone waypoints and removed ${stale.size} stale entries")
             XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
         }
     }
