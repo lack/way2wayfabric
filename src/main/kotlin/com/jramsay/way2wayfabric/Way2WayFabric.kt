@@ -105,7 +105,10 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
     }
 
     fun waypointManager() : WaypointsManager? {
-        return XaeroMinimapSession.getCurrentSession()?.waypointsManager
+        val waypointMgr = XaeroMinimapSession.getCurrentSession()?.waypointsManager
+        if (waypointMgr == null)
+            warnOnce("Could not get a waypoint manager")
+        return waypointMgr
     }
 
     fun warnOnce(message: String) {
@@ -116,11 +119,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
     }
 
     fun updateAllWaypoints(waystones: List<GenericWaystone>, repeats: Int) {
-        val waypointMgr = waypointManager()
-        if (waypointMgr == null) {
-            warnOnce("Could not get a waypoint manager")
-            return
-        }
+        val waypointMgr = waypointManager() ?: return
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
@@ -170,11 +169,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
 
     override fun syncWaystone(waystone: GenericWaystone) {
         logger.debug("Update: ${waystone}")
-        val waypointMgr = waypointManager()
-        if (waypointMgr == null) {
-            warnOnce("Could not get a waypoint manager")
-            return
-        }
+        val waypointMgr = waypointManager() ?: return
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
@@ -192,12 +187,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
 
     override fun removeWaystone(waystone: GenericWaystone) {
         logger.debug("Removing waypoint for $waystone")
-
-        val waypointMgr = waypointManager()
-        if (waypointMgr == null) {
-            warnOnce("Could not get a waypoint manager")
-            return
-        }
+        val waypointMgr = waypointManager() ?: return
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
@@ -215,11 +205,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
 
     override fun removeAllWaystones() {
         logger.debug("Removing all waystone waypoints")
-        val waypointMgr = waypointManager()
-        if (waypointMgr == null) {
-            warnOnce("Could not get a waypoint manager")
-            return
-        }
+        val waypointMgr = waypointManager() ?: return
 
         val waypointSet = waypointMgr.currentWorld?.currentSet
         if (waypointSet == null) {
