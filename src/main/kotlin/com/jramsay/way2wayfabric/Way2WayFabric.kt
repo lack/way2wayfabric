@@ -96,6 +96,11 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
             logger.info("Registered with waystones for waypoint sync")
             providers++
         }
+        if (FabricWaystones.isPresent) {
+            FabricWaystones.register(this)
+            logger.info("Registered with FabricWaystones for waypoint sync")
+            providers++
+        }
         logger.info("Way2wayFabric has been initialized for $providers waystone provider(s)")
     }
 

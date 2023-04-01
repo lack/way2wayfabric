@@ -7,6 +7,17 @@ version = project.extra["mod_version"] as String
 group = project.extra["maven_group"] as String
 repositories {
     maven("https://cursemaven.com/")
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = uri("https://api.modrinth.com/maven")
+            }
+        }
+        filter {
+            includeGroup("maven.modrinth")
+        }
+    }
     maven("https://nexus.twelveiterations.com/repository/maven-public/")
     maven("https://maven.shedaniel.me/")
 }
@@ -22,6 +33,9 @@ dependencies {
     modRuntimeOnly("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
     modApi("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
     modRuntimeOnly("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
+
+    modApi("maven.modrinth", "fwaystones", project.extra["fwaystones_version"] as String)
+    modRuntimeOnly("maven.modrinth", "fwaystones", project.extra["fwaystones_version"] as String)
 }
 tasks {
     val javaVersion = JavaVersion.toVersion((project.extra["java_version"] as String).toInt())

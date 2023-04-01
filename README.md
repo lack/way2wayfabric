@@ -8,13 +8,13 @@ Since Xaero's Minimap doesn't have an official API, it's unlikely that the Wayst
 
 Requires:
 
-- [Waystones](https://modrinth.com/mod/waystones) (tested with 11.3.1)
 - [Xaero's Minimap (curseforge)](https://www.curseforge.com/minecraft/mc-mods/xaeros-minimap) (tested with 23.3.2)
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin)
 
-Not Supported:
+Supported waystone mods:
 
-- [Fabric Waystones](https://modrinth.com/mod/fwaystones) (yet)
+- [Waystones](https://modrinth.com/mod/waystones) (tested with 11.3.1)
+- [Fabric Waystones](https://modrinth.com/mod/fwaystones) (tested with 3.0.5))
 
 inspired by:
 
