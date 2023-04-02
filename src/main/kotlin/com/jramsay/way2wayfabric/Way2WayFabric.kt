@@ -46,14 +46,6 @@ data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String,
     }
 }
 
-fun WaypointsManager.getNamedSet(name: String): WaypointSet {
-    val world = currentWorld
-    return world.sets.getOrElse(name, {
-        world.addSet(name)
-        return world.sets.get(name)!!
-    })
-}
-
 fun WaypointsManager.sameDimensionAs(waystone: GenericWaystone): Boolean {
     return currentWorld.container.subName == waystone.dimension
 }
@@ -84,10 +76,69 @@ fun WaypointSet.updateWaypointFor(waystone: GenericWaystone): Boolean {
     return false
 }
 
+class MapWatcher {
+    private var _waypointMgr: WaypointsManager? = null
+    private val deferred = ArrayList<(WaypointsManager)->Unit>()
+    private var running = false
+    private var count = 0
+
+    fun tryInit() {
+        if (_waypointMgr == null) {
+            _waypointMgr = XaeroMinimapSession.getCurrentSession()?.waypointsManager
+        }
+        if (!ready()) {
+            if (failed()) {
+                logger.warn("Waypoint manager is not ready after $count attempts. Giving up and discarding ${deferred.size} deferred events")
+                running = false
+                return
+            }
+            if (!running)
+                logger.info("Defering waystone events until the waypoint manager is ready")
+            else
+                logger.debug("Setting deferred event timer ($count)")
+            running = true
+            count++
+            Timer("Deferred Event", false).schedule(500) {
+                tryInit()
+            }
+            return
+        }
+        logger.info("Waypoint manager is ready. Running ${deferred.size} deferred events")
+        deferred.forEach{
+            it(waypointMgr)
+        }
+        running = false
+    }
+
+    fun failed(): Boolean {
+        return count > 20
+    }
+
+    fun ready(): Boolean {
+        val currentWorld = _waypointMgr?.currentWorld
+        return _waypointMgr != null && currentWorld != null
+    }
+
+    fun whenReady(fn : (WaypointsManager)->Unit) {
+        if (ready()) {
+            logger.debug("Running immediately")
+            fn(waypointMgr)
+        }
+        if (failed()) return
+        logger.debug("Deferring $fn")
+        deferred.add(fn)
+        if (!running) tryInit()
+        logger.info("Deferred ${deferred.size} waypoint events so far")
+    }
+
+    val waypointMgr: WaypointsManager
+        get() = _waypointMgr!!
+}
+
 @Suppress("UNUSED")
 object Way2WayFabric: ModInitializer, IWay2WayHandler {
     const val MOD_ID = "way2wayfabric"
-    private val warned = HashSet<String>()
+    private val mapWatcher = MapWatcher()
 
     override fun onInitialize() {
         var providers= 0
@@ -104,38 +155,9 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
         logger.info("Way2wayFabric has been initialized for $providers waystone provider(s)")
     }
 
-    fun waypointManager() : WaypointsManager? {
-        val waypointMgr = XaeroMinimapSession.getCurrentSession()?.waypointsManager
-        if (waypointMgr == null)
-            warnOnce("Could not get a waypoint manager")
-        return waypointMgr
-    }
-
-    fun warnOnce(message: String) {
-        if (!warned.contains(message)) {
-            logger.warn(message)
-            warned.add(message)
-        }
-    }
-
-    fun updateAllWaypoints(waystones: List<GenericWaystone>, repeats: Int) {
-        val waypointMgr = waypointManager() ?: return
-
-        val waypointSet = waypointMgr.currentWorld?.currentSet
-        if (waypointSet == null) {
-            if (repeats < 20) {
-                // TODO: If there was an event from Xaero's Minimap we could
-                // wait for that would signal the wayponts are ready that would
-                // be better, but I haven't found one yet...
-                Timer("Deferred Event", false).schedule(500) {
-                    logger.debug("Running deferred event handler...")
-                    updateAllWaypoints(waystones, repeats + 1)
-                }
-            } else {
-                warnOnce("Could not find a world to put waypoints in")
-            }
-            return
-        }
+    override fun syncAllWaystones(waystones: List<GenericWaystone>) { mapWatcher.whenReady { mgr ->
+        logger.debug("Known: ${waystones.size} waystones")
+        val waypointSet = mgr.currentWorld.currentSet
 
         var stale = waypointSet.list.filter {
             it.symbol == GenericWaystone.SYMBOL
@@ -143,7 +165,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
 
         var changed = 0
         waystones.filter {
-            waypointMgr.sameDimensionAs(it)
+            mgr.sameDimensionAs(it)
         }.forEach {
             if (waypointSet.updateWaypointFor(it))
                 changed += 1
@@ -158,66 +180,45 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
         
         if (changed > 0 || stale.size > 0) {
             logger.info("Synchronized $changed waystone waypoints and removed ${stale.size} stale entries")
-            XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
+            XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
         }
-    }
+    } }
 
-    override fun syncAllWaystones(waystones: List<GenericWaystone>) {
-        logger.debug("Known: ${waystones.size} waystones")
-        updateAllWaypoints(waystones, 0)
-    }
-
-    override fun syncWaystone(waystone: GenericWaystone) {
+    override fun syncWaystone(waystone: GenericWaystone) { mapWatcher.whenReady { mgr ->
         logger.debug("Update: ${waystone}")
-        val waypointMgr = waypointManager() ?: return
+        val waypointSet = mgr.currentWorld.currentSet
 
-        val waypointSet = waypointMgr.currentWorld?.currentSet
-        if (waypointSet == null) {
-            warnOnce("Could not find a world to put waypoints in")
-            return
-        }
-
-        if (waypointMgr.sameDimensionAs(waystone)) {
+        if (mgr.sameDimensionAs(waystone)) {
             if (waypointSet.updateWaypointFor(waystone)) {
                 logger.info("Updated waystone \"${waystone.name}\" waypoint")
-                XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
+                XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
             }
         }
-    }
+    } }
 
-    override fun removeWaystone(waystone: GenericWaystone) {
+    override fun removeWaystone(waystone: GenericWaystone) { mapWatcher.whenReady { mgr ->
         logger.debug("Removing waypoint for $waystone")
-        val waypointMgr = waypointManager() ?: return
+        val waypointSet = mgr.currentWorld.currentSet
 
-        val waypointSet = waypointMgr.currentWorld?.currentSet
-        if (waypointSet == null) {
-            warnOnce("Could not find a world to put waypoints in")
-            return
-        }
         val changed = waypointSet.list.removeIf {
             it.matches(waystone)
         }
         if (changed) {
             logger.info("Removed waypoint for $waystone")
-            XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
+            XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
         }
-    }
+    } }
 
-    override fun removeAllWaystones() {
+    override fun removeAllWaystones() { mapWatcher.whenReady { mgr ->
         logger.debug("Removing all waystone waypoints")
-        val waypointMgr = waypointManager() ?: return
+        val waypointSet = mgr.currentWorld.currentSet
 
-        val waypointSet = waypointMgr.currentWorld?.currentSet
-        if (waypointSet == null) {
-            warnOnce("Could not find a world to put waypoints in")
-            return
-        }
         val changed = waypointSet.list.removeIf {
             it.symbol == GenericWaystone.SYMBOL
         }
         if (changed) {
             logger.info("Removed all waystone waypoints")
-            XaeroMinimap.instance.settings.saveAllWaypoints(waypointMgr)
+            XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
         }
-    }
+    } }
 }
