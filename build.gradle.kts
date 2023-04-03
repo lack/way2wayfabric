@@ -55,6 +55,9 @@ tasks {
             "fabric_language_kotlin" to project.extra["fabric_language_kotlin_version"] as String,
             "minecraft" to project.extra["minecraft_version"] as String,
             "java" to project.extra["java_version"] as String,
+            "xaero_minimap" to project.extra["xaero_minimap_version"] as String,
+            "waystones" to project.extra["waystones_version"] as String,
+            "fwaystones" to project.extra["fwaystones_version"] as String,
         )) }
         filesMatching("*.mixins.json") { expand(mutableMapOf("java" to project.extra["java_version"] as String)) }
     }
