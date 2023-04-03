@@ -34,13 +34,12 @@ data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String,
     constructor(pos : BlockPos, name: String, dimension: String, modIdx: Int) : this(pos.x, pos.y, pos.z, name, dimension, modIdx)
 
     companion object {
-        val SYMBOL = "〨"
-        val SUFFIX = '₁'
+        val SYMBOL = arrayOf("〨", "主", "兰", "亗")
 
         fun symbol(idx: Int): String {
             if (idx < 0)
-                return SYMBOL
-            return "${SYMBOL}${SUFFIX+idx}"
+                return SYMBOL[0]
+            return SYMBOL[idx]
         }
     }
 
