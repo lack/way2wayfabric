@@ -19,30 +19,41 @@ val logger = LoggerFactory.getLogger("Way2WayFabric")
 
 interface IWay2WayHandler {
     fun syncWaystone(waystone: GenericWaystone)
-    fun syncAllWaystones(waystones: List<GenericWaystone>)
+    fun syncAllWaystones(waystones: List<GenericWaystone>, modIdx: Int)
     fun removeWaystone(waystone: GenericWaystone)
-    fun removeAllWaystones()
+    fun removeAllWaystones(modIdx: Int)
 }
 
 interface IWaystoneProvider {
     val isPresent: Boolean
+    var modIdx: Int
     fun register(handler: IWay2WayHandler)
 }
 
-data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String, val dimension: String) {
-    constructor(pos : BlockPos, name: String, dimension: String) : this(pos.x, pos.y, pos.z, name, dimension)
+data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String, val dimension: String, val modIdx: Int) {
+    constructor(pos : BlockPos, name: String, dimension: String, modIdx: Int) : this(pos.x, pos.y, pos.z, name, dimension, modIdx)
 
     companion object {
         val SYMBOL = "〨"
+        val SUFFIX = '₁'
+
+        fun symbol(idx: Int): String {
+            if (idx < 0)
+                return SYMBOL
+            return "${SYMBOL}${SUFFIX+idx}"
+        }
     }
 
+    val symbol: String
+        get() = symbol(modIdx)
+
     override fun toString(): String {
-        return "$SYMBOL:$name ($x,$y,$z)"
+        return "$symbol:$name ($x,$y,$z)"
     }
 
     fun toWaypoint(): Waypoint {
         val color = Random.nextInt(ModSettings.ENCHANT_COLORS.size)
-        return Waypoint(x, y, z, name, SYMBOL, color, 0, false)
+        return Waypoint(x, y, z, name, symbol, color, 0, false)
     }
 }
 
@@ -56,6 +67,10 @@ fun Waypoint.matches(that: Waypoint): Boolean {
 
 fun Waypoint.matches(that: GenericWaystone): Boolean {
     return this.x == that.x && this.y == that.y && this.z == that.z
+}
+
+fun Waypoint.fromMod(modIdx: Int): Boolean {
+    return symbol == GenericWaystone.symbol(modIdx)
 }
 
 fun WaypointSet.updateWaypointFor(waystone: GenericWaystone): Boolean {
@@ -141,26 +156,32 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
     private val mapWatcher = MapWatcher()
 
     override fun onInitialize() {
-        var providers= 0
+        var providers = ArrayList<IWaystoneProvider>()
         if (BlayWaystones.isPresent) {
             BlayWaystones.register(this)
             logger.info("Registered with waystones for waypoint sync")
-            providers++
+            providers.add(BlayWaystones)
         }
         if (FabricWaystones.isPresent) {
             FabricWaystones.register(this)
             logger.info("Registered with FabricWaystones for waypoint sync")
-            providers++
+            providers.add(FabricWaystones)
         }
-        logger.info("Way2wayFabric has been initialized for $providers waystone provider(s)")
+        if (providers.size == 1)
+            providers[0].modIdx = -1
+        else
+            providers.forEachIndexed {
+                i, it -> it.modIdx = i
+            }
+        logger.info("Way2wayFabric has been initialized for ${providers.size} waystone provider(s)")
     }
 
-    override fun syncAllWaystones(waystones: List<GenericWaystone>) { mapWatcher.whenReady { mgr ->
+    override fun syncAllWaystones(waystones: List<GenericWaystone>, modIdx: Int) { mapWatcher.whenReady { mgr ->
         logger.debug("Known: ${waystones.size} waystones")
         val waypointSet = mgr.currentWorld.currentSet
 
         var stale = waypointSet.list.filter {
-            it.symbol == GenericWaystone.SYMBOL
+            it.fromMod(modIdx)
         }
 
         var changed = 0
@@ -209,12 +230,12 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
         }
     } }
 
-    override fun removeAllWaystones() { mapWatcher.whenReady { mgr ->
+    override fun removeAllWaystones(modIdx: Int) { mapWatcher.whenReady { mgr ->
         logger.debug("Removing all waystone waypoints")
         val waypointSet = mgr.currentWorld.currentSet
 
         val changed = waypointSet.list.removeIf {
-            it.symbol == GenericWaystone.SYMBOL
+            it.fromMod(modIdx)
         }
         if (changed) {
             logger.info("Removed all waystone waypoints")

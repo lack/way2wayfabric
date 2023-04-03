@@ -5,17 +5,11 @@ import wraith.fwaystones.FabricWaystones
 import wraith.fwaystones.integration.event.WaystoneEvents
 import wraith.fwaystones.util.Utils
 
-fun waystoneFromHash(hash: String?): GenericWaystone?     {
-    if (hash == null) return null
-    val waystone = FabricWaystones.WAYSTONE_STORAGE.getWaystoneData(hash) ?: return null
-    val pos = waystone.way_getPos().up(1)
-    val dimension = waystone.worldName.split(':')[1]
-    return GenericWaystone(pos, waystone.waystoneName, dimension)
-}
-
 object FabricWaystones : IWaystoneProvider {
     override val isPresent: Boolean
         get() = FabricLoader.getInstance().isModLoaded(FabricWaystones.MOD_ID)
+
+    override var modIdx: Int = -1
 
     override fun register(handler: IWay2WayHandler) {
         WaystoneEvents.DISCOVER_WAYSTONE_EVENT.register {
@@ -34,7 +28,15 @@ object FabricWaystones : IWaystoneProvider {
                 handler.removeWaystone(waystone)
         }
         WaystoneEvents.FORGET_ALL_WAYSTONES_EVENT.register {
-            handler.removeAllWaystones()
+            handler.removeAllWaystones(modIdx)
         }
+    }
+
+    fun waystoneFromHash(hash: String?): GenericWaystone?     {
+        if (hash == null) return null
+        val waystone = FabricWaystones.WAYSTONE_STORAGE.getWaystoneData(hash) ?: return null
+        val pos = waystone.way_getPos().up(1)
+        val dimension = waystone.worldName.split(':')[1]
+        return GenericWaystone(pos, waystone.waystoneName, dimension, modIdx)
     }
 }
