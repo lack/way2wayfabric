@@ -34,7 +34,7 @@ data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String,
     constructor(pos : BlockPos, name: String, dimension: String, modIdx: Int) : this(pos.x, pos.y, pos.z, name, dimension, modIdx)
 
     companion object {
-        val SYMBOL = arrayOf("〨", "主", "兰", "亗")
+        val SYMBOL = arrayOf("〨", "兰", "亗", "主")
 
         fun symbol(idx: Int): String {
             if (idx < 0)
