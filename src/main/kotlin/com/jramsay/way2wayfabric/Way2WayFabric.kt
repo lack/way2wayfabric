@@ -217,7 +217,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
 
         if (mgr.sameDimensionAs(waystone)) {
             if (waypointSet.updateWaypointFor(waystone)) {
-                logger.info("Updated waystone \"${waystone.name}\" waypoint")
+                logger.debug("Updated $waystone")
                 XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
             }
         }
