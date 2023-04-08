@@ -5,6 +5,7 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
 import java.util.Timer
+import java.util.LinkedList
 import kotlin.concurrent.schedule
 import kotlin.random.Random
 
@@ -91,17 +92,46 @@ fun WaypointSet.updateWaypointFor(waystone: GenericWaystone): Boolean {
 }
 
 class MapWatcher {
-    private var _waypointMgr: WaypointsManager? = null
-    private val deferred = ArrayList<(WaypointsManager)->Unit>()
+    private val deferred = LinkedList<(WaypointsManager)->Unit>()
     private var running = false
     private var count = 0
 
-    fun tryInit() {
-        if (_waypointMgr == null) {
-            _waypointMgr = XaeroMinimapSession.getCurrentSession()?.waypointsManager
+    @Synchronized
+    fun whenReady(fn : (WaypointsManager)->Unit) {
+        val mgr = mgrIfReady()
+        if (mgr == null || deferred.isNotEmpty()) {
+            defer(fn)
+            return
         }
-        if (!ready()) {
-            if (failed()) {
+        logger.debug("Running immediately")
+        fn(mgr)
+    }
+
+    fun mgrIfReady(): WaypointsManager? {
+        val mgr = XaeroMinimapSession.getCurrentSession()?.waypointsManager
+        if (mgr?.currentWorld == null)
+            return null
+        return mgr
+    }
+
+    @Synchronized
+    private fun defer(fn : (WaypointsManager)->Unit) {
+        if (givenUp()) return
+        logger.debug("Deferring $fn")
+        deferred.add(fn)
+        logger.info("Deferred ${deferred.size} waypoint events so far")
+        recheckMapReady()
+    }
+
+    fun givenUp(): Boolean {
+        return count > 20
+    }
+
+    @Synchronized
+    fun recheckMapReady() {
+        val mgr = mgrIfReady()
+        if (mgr == null) {
+            if (givenUp()) {
                 logger.warn("Waypoint manager is not ready after $count attempts. Giving up and discarding ${deferred.size} deferred events")
                 running = false
                 return
@@ -112,41 +142,18 @@ class MapWatcher {
                 logger.debug("Setting deferred event timer ($count)")
             running = true
             count++
-            Timer("Deferred Event", false).schedule(500) {
-                tryInit()
+            Timer("Deferred Events", false).schedule(500) {
+                recheckMapReady()
             }
             return
         }
         logger.info("Waypoint manager is ready. Running ${deferred.size} deferred events")
         deferred.forEach{
-            it(waypointMgr)
+            it(mgr)
         }
+        deferred.clear()
         running = false
     }
-
-    fun failed(): Boolean {
-        return count > 20
-    }
-
-    fun ready(): Boolean {
-        val currentWorld = _waypointMgr?.currentWorld
-        return _waypointMgr != null && currentWorld != null
-    }
-
-    fun whenReady(fn : (WaypointsManager)->Unit) {
-        if (ready()) {
-            logger.debug("Running immediately")
-            fn(waypointMgr)
-        }
-        if (failed()) return
-        logger.debug("Deferring $fn")
-        deferred.add(fn)
-        if (!running) tryInit()
-        logger.info("Deferred ${deferred.size} waypoint events so far")
-    }
-
-    val waypointMgr: WaypointsManager
-        get() = _waypointMgr!!
 }
 
 @Suppress("UNUSED")
@@ -155,7 +162,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
     private val mapWatcher = MapWatcher()
 
     override fun onInitialize() {
-        var providers = ArrayList<IWaystoneProvider>()
+        var providers = LinkedList<IWaystoneProvider>()
         if (BlayWaystones.isPresent) {
             BlayWaystones.register(this)
             logger.info("Registered with waystones for waypoint sync")
@@ -167,7 +174,7 @@ object Way2WayFabric: ModInitializer, IWay2WayHandler {
             providers.add(FabricWaystones)
         }
         if (providers.size == 1)
-            providers[0].modIdx = -1
+            providers.first.modIdx = -1
         else
             providers.forEachIndexed {
                 i, it -> it.modIdx = i
