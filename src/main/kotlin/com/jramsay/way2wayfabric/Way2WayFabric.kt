@@ -124,7 +124,7 @@ class MapWatcher {
     }
 
     fun givenUp(): Boolean {
-        return count > 20
+        return count > 24
     }
 
     @Synchronized
@@ -152,6 +152,7 @@ class MapWatcher {
             it(mgr)
         }
         deferred.clear()
+        count = 0
         running = false
     }
 }
