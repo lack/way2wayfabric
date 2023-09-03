@@ -8,7 +8,7 @@ Since Xaero's Minimap doesn't have an official API, it's unlikely that the Wayst
 
 Requires:
 
-- [Xaero's Minimap (curseforge)](https://www.curseforge.com/minecraft/mc-mods/xaeros-minimap) (tested with 23.3.2)
+- [Xaero's Minimap (curseforge)](https://www.curseforge.com/minecraft/mc-mods/xaeros-minimap) (tested with 23.3.2) or [Xaero's Minimap fair-play](https://www.curseforge.com/minecraft/mc-mods/xaeros-minimap-fair-play-edition)
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin)
 
 Supported waystone mods:

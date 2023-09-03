@@ -1,6 +1,7 @@
 package com.jimramsay.way2wayfabric
 
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.MinecraftClient
 import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
@@ -161,9 +162,22 @@ class MapWatcher {
 object Way2WayFabric: ModInitializer, IWay2WayHandler {
     const val MOD_ID = "way2wayfabric"
     private val mapWatcher = MapWatcher()
+    private val compatibleMaps = arrayOf("xaerominimap", "xaerominimapfair")
+
+    fun ensureCompatibleMap() {
+        val matched = FabricLoader.getInstance().allMods.filter{
+            mod -> compatibleMaps.any { it == mod.metadata.id }
+        }
+        if (matched.any()) {
+            logger.info("Found compatible map mod ${matched}")
+        } else {
+            logger.warn("No compatible map mods are loaded! (Expecting one of: ${compatibleMaps})")
+        }
+    }
 
     override fun onInitialize() {
         var providers = LinkedList<IWaystoneProvider>()
+        ensureCompatibleMap()
         if (BlayWaystones.isPresent) {
             BlayWaystones.register(this)
             logger.info("Registered with waystones for waypoint sync")

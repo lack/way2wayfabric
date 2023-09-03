@@ -27,8 +27,14 @@ dependencies {
     modImplementation("net.fabricmc", "fabric-loader", project.extra["loader_version"] as String)
     modImplementation("net.fabricmc.fabric-api", "fabric-api", project.extra["fabric_version"] as String)
     modImplementation("net.fabricmc", "fabric-language-kotlin", project.extra["fabric_language_kotlin_version"] as String)
-    modImplementation("curse.maven", "xaers-minimap-263420", project.extra["xaero_minimap_id"] as String)
 
+    // Allow xaerominimap or xaerominimapfairplay (same API)
+    modApi("curse.maven", "xaero-minimap-263420", project.extra["xaero_minimap_id"] as String)
+    modRuntimeOnly("curse.maven", "xaero-minimap-263420", project.extra["xaero_minimap_id"] as String)
+    modApi("curse.maven", "xaero-fairplay-263466", project.extra["xaero_fairplay_id"] as String)
+    modRuntimeOnly("curse.maven", "xaero-fairplay-263466", project.extra["xaero_fairplay_id"] as String)
+
+    // Support either fabric waystones mods (or both!)
     modApi("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
     modRuntimeOnly("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
     modApi("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
@@ -56,6 +62,7 @@ tasks {
             "minecraft" to project.extra["minecraft_version"] as String,
             "java" to project.extra["java_version"] as String,
             "xaero_minimap" to project.extra["xaero_minimap_version"] as String,
+            "xaero_fairplay" to project.extra["xaero_fairplay_version"] as String,
             "waystones" to project.extra["waystones_version"] as String,
             "fwaystones" to project.extra["fwaystones_version"] as String,
         )) }

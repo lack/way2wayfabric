@@ -37,10 +37,11 @@
     "fabric-api": ">=${fabric_api}",
     "fabric-language-kotlin": ">=${fabric_language_kotlin}",
     "minecraft": ">=${minecraft}",
-    "java": ">=${java}",
-    "xaerominimap": ">=${xaero_minimap}"
+    "java": ">=${java}"
   },
   "suggests": {
+    "xaerominimap": ">=${xaero_minimap}",
+    "xaerofairplay": ">=${xaero_fairplay}",
     "waystones": ">=${waystones}",
     "fwaystones": ">=${fwaystones}"
   }
