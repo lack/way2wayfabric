@@ -1,5 +1,6 @@
 # way2wayfabric
 
+[![Java CI with Gradle](https://github.com/lack/way2wayfabric/actions/workflows/gradle-build.yml/badge.svg?branch=main)](https://github.com/lack/way2wayfabric/actions/workflows/gradle-build.yml)
 [![Modrinth Version](https://img.shields.io/modrinth/v/lO0vzQUy?color=informational&label=Modrinth&logo=modrinth)](https://modrinth.com/mod/way2wayfabric)
 
 Waystone -> Xaero's Minimap Waypoint sync for fabric
