@@ -64,8 +64,35 @@ data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String,
     }
 }
 
+data class WaypointContext(val waypoint: Waypoint, val wpset: WaypointSet) {
+    fun remove(): Boolean {
+        return wpset.list.remove(waypoint)
+    }
+
+    fun matches(waystone: GenericWaystone): Boolean {
+        return waypoint.matches(waystone)
+    }
+
+    fun updateFrom(waystone: GenericWaystone): Boolean {
+        return wpset.updateWaypoint(waypoint, waystone)
+    }
+}
+
 fun WaypointsManager.sameDimensionAs(waystone: GenericWaystone): Boolean {
     return currentWorld.container.subName == waystone.dimension
+}
+
+fun WaypointsManager.allModWaypoints(modIdx: Int): List<WaypointContext> {
+    return this.currentWorld.sets.flatMap { wps -> wps.value.allWay2way(modIdx).map { WaypointContext(it, wps.value) } }
+}
+
+fun WaypointsManager.findExistingFor(waystone: GenericWaystone): WaypointContext? {
+    return allModWaypoints(waystone.modIdx).find { it.matches(waystone) }
+}
+
+fun WaypointsManager.findWay2waySet(): WaypointSet {
+    // For now, always use the currently active set
+    return this.currentWorld.currentSet
 }
 
 fun Waypoint.matches(that: Waypoint): Boolean {
@@ -80,15 +107,22 @@ fun Waypoint.fromMod(modIdx: Int): Boolean {
     return symbol == GenericWaystone.symbol(modIdx)
 }
 
-fun WaypointSet.updateWaypointFor(waystone: GenericWaystone): Boolean {
+fun WaypointSet.allWay2way(modIdx: Int): List<Waypoint> {
+    return this.list.filter { it.fromMod(modIdx) }
+}
+
+fun WaypointSet.addWaypointFor(waystone: GenericWaystone) {
+    val new = waystone.toWaypoint()
+    logger.info("Adding new waypoint for $waystone")
+    list.add(new)
+}
+
+fun WaypointSet.updateWaypoint(
+    existing: Waypoint,
+    waystone: GenericWaystone,
+): Boolean {
     val new = waystone.toWaypoint()
     logger.debug("Updating waypoint for $waystone")
-    val existing = list.find { it.matches(new) }
-    if (existing == null) {
-        logger.info("Adding new waypoint for $waystone")
-        list.add(new)
-        return true
-    }
     if (existing.name != new.name || existing.symbol != new.symbol) {
         logger.info("Found existing waypoint: ${existing.symbol}:${existing.name} -> ${new.symbol}:${new.name}")
         existing.name = new.name
@@ -217,33 +251,33 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
     ) {
         mapWatcher.whenReady { mgr ->
             logger.debug("Known: ${waystones.size} waystones")
-            val waypointSet = mgr.currentWorld.currentSet
-
-            var stale =
-                waypointSet.list.filter {
-                    it.fromMod(modIdx)
-                }
-
+            val existing = LinkedList(mgr.allModWaypoints(modIdx))
+            val new = LinkedList<GenericWaystone>()
             var changed = 0
             waystones.filter {
                 mgr.sameDimensionAs(it)
             }.forEach {
-                if (waypointSet.updateWaypointFor(it)) {
-                    changed += 1
-                }
-                stale =
-                    stale.filterNot {
-                            wp ->
-                        wp.matches(it)
+                val found = existing.find { wpc -> wpc.matches(it) }
+                if (found == null) {
+                    new.add(it)
+                } else {
+                    if (found.updateFrom(it)) {
+                        changed += 1
                     }
+                    existing.remove(found)
+                }
+            }
+            if (new.isNotEmpty()) {
+                var activeSet = mgr.findWay2waySet()
+                new.forEach {
+                    activeSet.addWaypointFor(it)
+                }
             }
 
-            if (stale.size > 0) {
-                waypointSet.list.removeAll(stale)
-            }
+            existing.forEach { it.remove() }
 
-            if (changed > 0 || stale.size > 0) {
-                logger.info("Synchronized $changed waystone waypoints and removed ${stale.size} stale entries")
+            if (changed > 0 || existing.size > 0) {
+                logger.info("Synchronized $changed waystone waypoints, added ${new.size} and removed ${existing.size} stale entries")
                 XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
             }
         }
@@ -251,28 +285,38 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
 
     override fun syncWaystone(waystone: GenericWaystone) {
         mapWatcher.whenReady { mgr ->
+            if (!mgr.sameDimensionAs(waystone)) {
+                return@whenReady
+            }
             logger.debug("Update: $waystone")
-            val waypointSet = mgr.currentWorld.currentSet
+            val existing = mgr.findExistingFor(waystone)
+            var changed: Boolean
+            if (existing == null) {
+                val waypointSet = mgr.findWay2waySet()
+                waypointSet.addWaypointFor(waystone)
+                changed = true
+            } else {
+                changed = existing.updateFrom(waystone)
+            }
 
-            if (mgr.sameDimensionAs(waystone)) {
-                if (waypointSet.updateWaypointFor(waystone)) {
-                    logger.debug("Updated $waystone")
-                    XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
-                }
+            if (changed) {
+                logger.debug("Updated $waystone")
+                XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
             }
         }
     }
 
     override fun removeWaystone(waystone: GenericWaystone) {
         mapWatcher.whenReady { mgr ->
-            logger.debug("Removing waypoint for $waystone")
-            val waypointSet = mgr.currentWorld.currentSet
-
-            val changed =
-                waypointSet.list.removeIf {
-                    it.matches(waystone)
-                }
-            if (changed) {
+            if (!mgr.sameDimensionAs(waystone)) {
+                return@whenReady
+            }
+            logger.debug("Remove: $waystone")
+            val existing = mgr.findExistingFor(waystone)
+            if (existing == null) {
+                return@whenReady
+            }
+            if (existing.remove()) {
                 logger.info("Removed waypoint for $waystone")
                 XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
             }
@@ -282,14 +326,9 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
     override fun removeAllWaystones(modIdx: Int) {
         mapWatcher.whenReady { mgr ->
             logger.debug("Removing all waystone waypoints")
-            val waypointSet = mgr.currentWorld.currentSet
-
-            val changed =
-                waypointSet.list.removeIf {
-                    it.fromMod(modIdx)
-                }
-            if (changed) {
-                logger.info("Removed all waystone waypoints")
+            val changed = mgr.allModWaypoints(modIdx).count { it.remove() }
+            if (changed > 0) {
+                logger.info("Removed $changed waystone waypoints")
                 XaeroMinimap.instance.settings.saveAllWaypoints(mgr)
             }
         }
