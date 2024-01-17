@@ -2,7 +2,7 @@ package com.jimramsay.way2wayfabric
 
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 import org.slf4j.LoggerFactory
 import xaero.common.XaeroMinimapSession
 import xaero.common.minimap.waypoints.Waypoint

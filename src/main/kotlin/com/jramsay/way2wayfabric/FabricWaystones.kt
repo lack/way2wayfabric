@@ -37,7 +37,7 @@ object FabricWaystones : IWaystoneProvider {
     fun waystoneFromHash(hash: String?): GenericWaystone? {
         if (hash == null) return null
         val waystone = FabricWaystones.WAYSTONE_STORAGE.getWaystoneData(hash) ?: return null
-        val pos = waystone.way_getPos().up(1)
+        val pos = waystone.way_getPos().above(1)
         val dimension = waystone.worldName.split(':')[1]
         return GenericWaystone(pos, waystone.waystoneName, dimension, modIdx)
     }

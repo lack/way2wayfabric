@@ -26,7 +26,9 @@ repositories {
 }
 dependencies {
     minecraft("com.mojang", "minecraft", project.extra["minecraft_version"] as String)
-    mappings("net.fabricmc", "yarn", project.extra["yarn_mappings"] as String, null, "v2")
+    // Official mappings required for net.blay09.mods.waystones-common API
+    mappings(loom.officialMojangMappings())
+
     modImplementation("net.fabricmc", "fabric-loader", project.extra["loader_version"] as String)
     modImplementation("net.fabricmc.fabric-api", "fabric-api", project.extra["fabric_version"] as String)
     modImplementation("net.fabricmc", "fabric-language-kotlin", project.extra["fabric_language_kotlin_version"] as String)
@@ -38,11 +40,12 @@ dependencies {
     modRuntimeOnly("curse.maven", "xaero-fairplay-263466", project.extra["xaero_fairplay_id"] as String)
 
     // Support either fabric waystones mods (or both!)
-    modApi("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
-    modRuntimeOnly("net.blay09.mods", "balm-fabric", project.extra["balm_version"] as String)
-    modApi("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
-    modRuntimeOnly("net.blay09.mods", "waystones-fabric", project.extra["waystones_version"] as String)
+    modApi("net.blay09.mods", "balm-common", project.extra["balm_version"] as String)
+    modRuntimeOnly("net.blay09.mods", "balm-common", project.extra["balm_version"] as String)
+    modApi("net.blay09.mods", "waystones-common", project.extra["waystones_version"] as String)
+    modRuntimeOnly("net.blay09.mods", "waystones-common", project.extra["waystones_version"] as String)
 
+    // Not availale for 1.20.4 yet
     modApi("maven.modrinth", "fwaystones", project.extra["fwaystones_version"] as String)
     modRuntimeOnly("maven.modrinth", "fwaystones", project.extra["fwaystones_version"] as String)
 }
