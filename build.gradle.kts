@@ -21,7 +21,7 @@ repositories {
             includeGroup("maven.modrinth")
         }
     }
-    maven("https://nexus.twelveiterations.com/repository/maven-public/")
+    maven("https://maven.twelveiterations.com/repository/maven-public/")
     maven("https://maven.shedaniel.me/")
 }
 dependencies {
