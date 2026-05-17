@@ -235,7 +235,7 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
             providers.add(FabricWaystones)
         }
         if (providers.size == 1) {
-            providers.first.modIdx = -1
+            providers.first().modIdx = -1
         } else {
             providers.forEachIndexed {
                     i, it ->
