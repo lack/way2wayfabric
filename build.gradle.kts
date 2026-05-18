@@ -1,7 +1,7 @@
 plugins {
     id("fabric-loom")
     kotlin("jvm").version(System.getProperty("kotlin_version"))
-    id("org.jlleitschuh.gradle.ktlint") version "12.0.3"
+    id("org.jlleitschuh.gradle.ktlint") version System.getProperty("ktlint_version")
 }
 base {
     archivesName.set(project.extra["archives_base_name"] as String)

@@ -37,7 +37,14 @@ interface IWaystoneProvider {
     fun register(handler: IWay2WayHandler)
 }
 
-data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String, val dimension: String, val modIdx: Int) {
+data class GenericWaystone(
+    val x: Int,
+    val y: Int,
+    val z: Int,
+    val name: String,
+    val dimension: String,
+    val modIdx: Int,
+) {
     constructor(pos: BlockPos, name: String, dimension: String, modIdx: Int) : this(pos.x, pos.y, pos.z, name, dimension, modIdx)
 
     companion object {
@@ -54,9 +61,7 @@ data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String,
     val symbol: String
         get() = symbol(modIdx)
 
-    override fun toString(): String {
-        return "$symbol:$name ($x,$y,$z)"
-    }
+    override fun toString(): String = "$symbol:$name ($x,$y,$z)"
 
     fun toWaypoint(): Waypoint {
         val color = Random.nextInt(ModSettings.ENCHANT_COLORS.size)
@@ -64,52 +69,43 @@ data class GenericWaystone(val x: Int, val y: Int, val z: Int, val name: String,
     }
 }
 
-data class WaypointContext(val waypoint: Waypoint, val wpset: WaypointSet) {
-    fun remove(): Boolean {
-        return wpset.list.remove(waypoint)
+data class WaypointContext(
+    val waypoint: Waypoint,
+    val wpset: WaypointSet,
+) {
+    fun remove(): Boolean = wpset.list.remove(waypoint)
+
+    fun matches(waystone: GenericWaystone): Boolean = waypoint.matches(waystone)
+
+    fun updateFrom(waystone: GenericWaystone): Boolean = wpset.updateWaypoint(waypoint, waystone)
+}
+
+fun WaypointsManager.sameDimensionAs(waystone: GenericWaystone): Boolean = currentWorld.container.subName == waystone.dimension
+
+fun WaypointsManager.allModWaypoints(modIdx: Int): List<WaypointContext> =
+    this.currentWorld.sets.flatMap { wps ->
+        wps.value.allWay2way(modIdx).map {
+            WaypointContext(it, wps.value)
+        }
     }
 
-    fun matches(waystone: GenericWaystone): Boolean {
-        return waypoint.matches(waystone)
+fun WaypointsManager.findExistingFor(waystone: GenericWaystone): WaypointContext? =
+    allModWaypoints(waystone.modIdx).find {
+        it.matches(waystone)
     }
-
-    fun updateFrom(waystone: GenericWaystone): Boolean {
-        return wpset.updateWaypoint(waypoint, waystone)
-    }
-}
-
-fun WaypointsManager.sameDimensionAs(waystone: GenericWaystone): Boolean {
-    return currentWorld.container.subName == waystone.dimension
-}
-
-fun WaypointsManager.allModWaypoints(modIdx: Int): List<WaypointContext> {
-    return this.currentWorld.sets.flatMap { wps -> wps.value.allWay2way(modIdx).map { WaypointContext(it, wps.value) } }
-}
-
-fun WaypointsManager.findExistingFor(waystone: GenericWaystone): WaypointContext? {
-    return allModWaypoints(waystone.modIdx).find { it.matches(waystone) }
-}
 
 fun WaypointsManager.findWay2waySet(): WaypointSet {
     // For now, always use the currently active set
     return this.currentWorld.currentSet
 }
 
-fun Waypoint.matches(that: Waypoint): Boolean {
-    return this.x == that.x && this.y == that.y && this.z == that.z
-}
+fun Waypoint.matches(that: Waypoint): Boolean = this.x == that.x && this.y == that.y && this.z == that.z
 
-fun Waypoint.matches(that: GenericWaystone): Boolean {
-    return this.x == that.x && this.y == that.y && this.z == that.z
-}
+fun Waypoint.matches(that: GenericWaystone): Boolean = this.x == that.x && this.y == that.y && this.z == that.z
 
-fun Waypoint.fromMod(modIdx: Int): Boolean {
-    return symbol == GenericWaystone.symbol(modIdx)
-}
+fun Waypoint.fromMod(modIdx: Int): Boolean = symbol == GenericWaystone.symbol(modIdx)
 
-fun WaypointSet.allWay2way(modIdx: Int): List<Waypoint> {
-    return this.list.filter { it.fromMod(modIdx) }
-}
+fun WaypointSet.allWay2way(modIdx: Int): List<Waypoint> = this.list.filter { it.fromMod(modIdx) }
 
 fun WaypointSet.addWaypointFor(waystone: GenericWaystone) {
     val new = waystone.toWaypoint()
@@ -165,9 +161,7 @@ class MapWatcher {
         recheckMapReady()
     }
 
-    fun givenUp(): Boolean {
-        return count > 24
-    }
+    fun givenUp(): Boolean = count > 24
 
     @Synchronized
     fun recheckMapReady() {
@@ -210,8 +204,7 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
 
     fun ensureCompatibleMap() {
         val matched =
-            FabricLoader.getInstance().allMods.filter {
-                    mod ->
+            FabricLoader.getInstance().allMods.filter { mod ->
                 compatibleMaps.any { it == mod.metadata.id }
             }
         if (matched.any()) {
@@ -237,8 +230,7 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
         if (providers.size == 1) {
             providers.first().modIdx = -1
         } else {
-            providers.forEachIndexed {
-                    i, it ->
+            providers.forEachIndexed { i, it ->
                 it.modIdx = i
             }
         }
@@ -254,19 +246,20 @@ object Way2WayFabric : ModInitializer, IWay2WayHandler {
             val existing = LinkedList(mgr.allModWaypoints(modIdx))
             val new = LinkedList<GenericWaystone>()
             var changed = 0
-            waystones.filter {
-                mgr.sameDimensionAs(it)
-            }.forEach {
-                val found = existing.find { wpc -> wpc.matches(it) }
-                if (found == null) {
-                    new.add(it)
-                } else {
-                    if (found.updateFrom(it)) {
-                        changed += 1
+            waystones
+                .filter {
+                    mgr.sameDimensionAs(it)
+                }.forEach {
+                    val found = existing.find { wpc -> wpc.matches(it) }
+                    if (found == null) {
+                        new.add(it)
+                    } else {
+                        if (found.updateFrom(it)) {
+                            changed += 1
+                        }
+                        existing.remove(found)
                     }
-                    existing.remove(found)
                 }
-            }
             if (new.isNotEmpty()) {
                 var activeSet = mgr.findWay2waySet()
                 new.forEach {
