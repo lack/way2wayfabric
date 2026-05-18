@@ -46,6 +46,10 @@ dependencies {
     modApi("maven.modrinth", "fwaystones", project.extra["fwaystones_version"] as String)
     modRuntimeOnly("maven.modrinth", "fwaystones", project.extra["fwaystones_version"] as String)
 }
+kotlin {
+    val version = providers.gradleProperty("java_version").get()
+    jvmToolchain(version.toInt())
+}
 tasks {
     val javaVersion = JavaVersion.toVersion((project.extra["java_version"] as String).toInt())
     withType<JavaCompile> {
@@ -54,7 +58,6 @@ tasks {
         targetCompatibility = javaVersion.toString()
         options.release.set(javaVersion.toString().toInt())
     }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> { kotlinOptions { jvmTarget = javaVersion.toString() } }
     jar { from("LICENSE") { rename { "${it}_${base.archivesName.get()}" } } }
     processResources {
         filesMatching("fabric.mod.json") {
